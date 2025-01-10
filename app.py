@@ -2,10 +2,10 @@ import streamlit as st
 import json
 from pathlib import Path
 import time
-from typing import Dict, List, Any
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Any
 
 class TaskStatus(Enum):
     NOT_STARTED = "Not Started"
@@ -25,12 +25,10 @@ class BacktestManager:
         self.load_experiments()
         
     def load_experiments(self) -> None:
-        """Load experiment configuration from file"""
         with open(self.config_path) as f:
             self.experiments = json.load(f)
     
     def run_check(self, experiment_type: str, universe: str, product: str) -> bool:
-        """Execute check script for given experiment parameters"""
         try:
             result = subprocess.run(
                 ["python", "check_experiment.py", 
@@ -47,7 +45,6 @@ class BacktestManager:
             return False
 
     def run_batch(self, experiment_type: str, universe: str, product: str) -> bool:
-        """Execute batch run script for given experiment parameters"""
         try:
             result = subprocess.run(
                 ["python", "run_batch.py",
@@ -64,7 +61,6 @@ class BacktestManager:
             return False
 
     def summarize(self, experiment_type: str, universe: str, product: str) -> bool:
-        """Execute summary script for given experiment parameters"""
         try:
             result = subprocess.run(
                 ["python", "summarize.py",
@@ -80,23 +76,29 @@ class BacktestManager:
             st.error(f"Summary generation failed: {e.stderr}")
             return False
 
-def create_progress_container():
-    """Create a container for the progress bar and status"""
-    container = st.empty()
-    progress_bar = container.progress(0)
-    return container, progress_bar
+def show_status_and_progress(task_key: str, operation: str):
+    st.write(f"Running {operation}...")
+    progress_bar = st.progress(0)
+    
+    # Simulate progress
+    for i in range(100):
+        time.sleep(0.01)
+        progress_bar.progress(i + 1)
+    
+    return progress_bar
 
 def create_experiment_ui():
     st.title("Backtest Experiment Manager")
     
-    # Initialize session state for tracking task status
     if 'tasks' not in st.session_state:
         st.session_state.tasks = {}
 
-    # Initialize BacktestManager
-    manager = BacktestManager("experiments_config.json")
+    try:
+        manager = BacktestManager("experiments_config.json")
+    except FileNotFoundError:
+        st.error("experiments_config.json not found. Please create the configuration file.")
+        return
     
-    # Create UI for each experiment type
     for exp_type, universes in manager.experiments.items():
         st.header(f"Experiment: {exp_type}")
         
@@ -120,58 +122,40 @@ def create_experiment_ui():
                             status=TaskStatus.NOT_STARTED
                         )
 
-                # CHECK button and progress
+                # CHECK button
                 with col1:
                     if st.button("CHECK", key=f"check_btn_{check_key}"):
                         task = st.session_state.tasks[check_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        container, progress_bar = create_progress_container()
-                        for i in range(100):
-                            time.sleep(0.01)  # Simulate work
-                            progress_bar.progress(i + 1)
-                            task.progress = (i + 1) / 100
-                            
+                        progress_bar = show_status_and_progress(check_key, "Check")
                         success = manager.run_check(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        container.empty()
-                    
+                        
                     st.write(f"Status: {st.session_state.tasks[check_key].status.value}")
 
-                # BATCH RUN button and progress
+                # BATCH RUN button
                 with col2:
                     if st.button("RUN ON BATCH", key=f"batch_btn_{batch_key}"):
                         task = st.session_state.tasks[batch_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        container, progress_bar = create_progress_container()
-                        for i in range(100):
-                            time.sleep(0.01)  # Simulate work
-                            progress_bar.progress(i + 1)
-                            task.progress = (i + 1) / 100
-                            
+                        progress_bar = show_status_and_progress(batch_key, "Batch Run")
                         success = manager.run_batch(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        container.empty()
-                    
+                        
                     st.write(f"Status: {st.session_state.tasks[batch_key].status.value}")
 
-                # SUMMARIZE button and progress
+                # SUMMARIZE button
                 with col3:
                     if st.button("SUMMARIZE", key=f"summary_btn_{summary_key}"):
                         task = st.session_state.tasks[summary_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        container, progress_bar = create_progress_container()
-                        for i in range(100):
-                            time.sleep(0.01)  # Simulate work
-                            progress_bar.progress(i + 1)
-                            task.progress = (i + 1) / 100
-                            
+                        progress_bar = show_status_and_progress(summary_key, "Summarize")
                         success = manager.summarize(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        container.empty()
-                    
+                        
                     st.write(f"Status: {st.session_state.tasks[summary_key].status.value}")
 
                 st.markdown("---")
