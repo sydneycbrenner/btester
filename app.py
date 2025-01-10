@@ -80,6 +80,12 @@ class BacktestManager:
             st.error(f"Summary generation failed: {e.stderr}")
             return False
 
+def create_progress_container():
+    """Create a container for the progress bar and status"""
+    container = st.empty()
+    progress_bar = container.progress(0)
+    return container, progress_bar
+
 def create_experiment_ui():
     st.title("Backtest Experiment Manager")
     
@@ -120,7 +126,7 @@ def create_experiment_ui():
                         task = st.session_state.tasks[check_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        progress_bar = st.progress(0)
+                        container, progress_bar = create_progress_container()
                         for i in range(100):
                             time.sleep(0.01)  # Simulate work
                             progress_bar.progress(i + 1)
@@ -128,6 +134,7 @@ def create_experiment_ui():
                             
                         success = manager.run_check(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
+                        container.empty()
                     
                     st.write(f"Status: {st.session_state.tasks[check_key].status.value}")
 
@@ -137,7 +144,7 @@ def create_experiment_ui():
                         task = st.session_state.tasks[batch_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        progress_bar = st.progress(0)
+                        container, progress_bar = create_progress_container()
                         for i in range(100):
                             time.sleep(0.01)  # Simulate work
                             progress_bar.progress(i + 1)
@@ -145,6 +152,7 @@ def create_experiment_ui():
                             
                         success = manager.run_batch(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
+                        container.empty()
                     
                     st.write(f"Status: {st.session_state.tasks[batch_key].status.value}")
 
@@ -154,7 +162,7 @@ def create_experiment_ui():
                         task = st.session_state.tasks[summary_key]
                         task.status = TaskStatus.IN_PROGRESS
                         
-                        progress_bar = st.progress(0)
+                        container, progress_bar = create_progress_container()
                         for i in range(100):
                             time.sleep(0.01)  # Simulate work
                             progress_bar.progress(i + 1)
@@ -162,6 +170,7 @@ def create_experiment_ui():
                             
                         success = manager.summarize(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
+                        container.empty()
                     
                     st.write(f"Status: {st.session_state.tasks[summary_key].status.value}")
 
