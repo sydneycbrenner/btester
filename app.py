@@ -76,17 +76,6 @@ class BacktestManager:
             st.error(f"Summary generation failed: {e.stderr}")
             return False
 
-def show_status_and_progress(task_key: str, operation: str):
-    st.write(f"Running {operation}...")
-    progress_bar = st.progress(0)
-    
-    # Simulate progress
-    for i in range(100):
-        time.sleep(0.01)
-        progress_bar.progress(i + 1)
-    
-    return progress_bar
-
 def create_experiment_ui():
     st.title("Backtest Experiment Manager")
     
@@ -107,7 +96,6 @@ def create_experiment_ui():
             
             for product, frontier_points in products.items():
                 st.write(f"Product: {product}")
-                col1, col2, col3 = st.columns(3)
                 
                 # Generate unique keys for each task
                 check_key = f"{exp_type}_{universe}_{product}_check"
@@ -122,41 +110,47 @@ def create_experiment_ui():
                             status=TaskStatus.NOT_STARTED
                         )
 
+                # Create columns using beta_columns for 1.12.0
+                col1, col2, col3 = st.beta_columns(3)
+
                 # CHECK button
                 with col1:
+                    task = st.session_state.tasks[check_key]
                     if st.button("CHECK", key=f"check_btn_{check_key}"):
-                        task = st.session_state.tasks[check_key]
                         task.status = TaskStatus.IN_PROGRESS
-                        
-                        progress_bar = show_status_and_progress(check_key, "Check")
+                        my_bar = st.progress(0)
+                        for percent_complete in range(100):
+                            time.sleep(0.01)
+                            my_bar.progress(percent_complete + 1)
                         success = manager.run_check(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        
-                    st.write(f"Status: {st.session_state.tasks[check_key].status.value}")
+                    st.text(f"Status: {task.status.value}")
 
                 # BATCH RUN button
                 with col2:
+                    task = st.session_state.tasks[batch_key]
                     if st.button("RUN ON BATCH", key=f"batch_btn_{batch_key}"):
-                        task = st.session_state.tasks[batch_key]
                         task.status = TaskStatus.IN_PROGRESS
-                        
-                        progress_bar = show_status_and_progress(batch_key, "Batch Run")
+                        my_bar = st.progress(0)
+                        for percent_complete in range(100):
+                            time.sleep(0.01)
+                            my_bar.progress(percent_complete + 1)
                         success = manager.run_batch(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        
-                    st.write(f"Status: {st.session_state.tasks[batch_key].status.value}")
+                    st.text(f"Status: {task.status.value}")
 
                 # SUMMARIZE button
                 with col3:
+                    task = st.session_state.tasks[summary_key]
                     if st.button("SUMMARIZE", key=f"summary_btn_{summary_key}"):
-                        task = st.session_state.tasks[summary_key]
                         task.status = TaskStatus.IN_PROGRESS
-                        
-                        progress_bar = show_status_and_progress(summary_key, "Summarize")
+                        my_bar = st.progress(0)
+                        for percent_complete in range(100):
+                            time.sleep(0.01)
+                            my_bar.progress(percent_complete + 1)
                         success = manager.summarize(exp_type, universe, product)
                         task.status = TaskStatus.COMPLETED if success else TaskStatus.FAILED
-                        
-                    st.write(f"Status: {st.session_state.tasks[summary_key].status.value}")
+                    st.text(f"Status: {task.status.value}")
 
                 st.markdown("---")
 
